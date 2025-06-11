@@ -450,9 +450,10 @@ func NewSTSForNodePool(
 		initContainers = append(initContainers, keystoreInitContainer)
 	}
 
-	policyPodManagement := appsv1.ParallelPodManagement
-	if node.Component == "nodes" {
-		policyPodManagement = appsv1.OrderedReadyPodManagement
+	policyPodManagement := appsv1.OrderedReadyPodManagement
+	// Use ParallelPodManagement only for data nodes that don't have master/cluster_manager role
+	if !helpers.ContainsString(selectedRoles, "master") && !helpers.ContainsString(selectedRoles, "cluster_manager") {
+		policyPodManagement = appsv1.ParallelPodManagement
 	}
 
 	sts := &appsv1.StatefulSet{
