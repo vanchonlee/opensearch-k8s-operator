@@ -451,8 +451,8 @@ func NewSTSForNodePool(
 	}
 
 	policyPodManagement := appsv1.OrderedReadyPodManagement
-	// Use ParallelPodManagement only for data nodes that don't have master/cluster_manager role
-	if !helpers.ContainsString(selectedRoles, "master") && !helpers.ContainsString(selectedRoles, "cluster_manager") {
+	// Use ParallelPodManagement only for data nodes
+	if helpers.ContainsString(selectedRoles, "data") {
 		policyPodManagement = appsv1.ParallelPodManagement
 	}
 
