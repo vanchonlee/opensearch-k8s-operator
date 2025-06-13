@@ -193,6 +193,7 @@ func (r *ClusterReconciler) reconcileNodeStatefulSet(nodePool opsterv1.NodePool,
 			}
 			existing = *new
 		}
+		recoveryModeAnnotation := "opster.io/recovery-mode"
 		// Check number of PVCs for nodepool
 		pvcCount, err := helpers.CountPVCsForNodePool(r.client, r.instance, &nodePool)
 		if err != nil {
@@ -212,6 +213,7 @@ func (r *ClusterReconciler) reconcileNodeStatefulSet(nodePool opsterv1.NodePool,
 					}
 					// Recreate with PodManagementPolicy=Parallel
 					sts.Spec.PodManagementPolicy = appsv1.ParallelPodManagement
+					sts.Annotations[recoveryModeAnnotation] = "true"
 					sts.ObjectMeta.ResourceVersion = ""
 					sts.ObjectMeta.UID = ""
 					result, err = r.client.ReconcileResource(sts, reconciler.StatePresent)
@@ -224,7 +226,7 @@ func (r *ClusterReconciler) reconcileNodeStatefulSet(nodePool opsterv1.NodePool,
 					// Abort normal logic and requeue
 					return &ctrl.Result{Requeue: true}, err
 				}
-			} else if existing.Spec.PodManagementPolicy == appsv1.ParallelPodManagement {
+			} else if existing.Spec.PodManagementPolicy == appsv1.ParallelPodManagement && existing.Annotations[recoveryModeAnnotation] == "true" {
 				// We are in Parallel mode but appear to not have a failure situation any longer. Switch back to normal mode
 				r.logger.Info(fmt.Sprintf("Ending recovery mode for nodepool %s", nodePool.Component))
 				if err := helpers.WaitForSTSDelete(r.client, &existing); err != nil {
